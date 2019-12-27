@@ -1,3 +1,5 @@
+mod test;
+
 extern crate num_bigint;
 
 use num_bigint::BigUint;
@@ -39,9 +41,9 @@ impl Bit {
     }
 
     pub fn concat(&self, that: &Bit) -> Bit {
-        let value = (&self.value << that.length) | &that.value;
+        let value = (&self.value << &that.length) | &that.value;
 
-        Bit { value, length: self.length + that.length }
+        Bit { value, length: &self.length + &that.length }
     }
 }
 
