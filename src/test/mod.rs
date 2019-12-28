@@ -1,4 +1,4 @@
-use super::{Bit, BitConstructor, Add, Truncate};
+use super::{Bit, BitConstructor, Truncate};
 use num_bigint::{Sign, BigInt};
 
 #[test]
