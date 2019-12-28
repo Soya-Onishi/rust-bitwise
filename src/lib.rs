@@ -21,10 +21,14 @@ impl Bit {
         self.length
     }
 
-    pub fn concat(&self, that: &Bit) -> Bit {
-        let value = (&self.value << that.length) | &that.value;
+    pub fn concat(bits: Vec<&Bit>) -> Bit {
+        assert!(bits.len() >= 2);
 
-        Bit { value, length: self.length + that.length }
+        let result = bits[1..].iter().fold(bits[0], |acc, &bit| {
+            (acc << bit.length()) | bit.value()
+        });
+
+        result.clone()
     }
 }
 
