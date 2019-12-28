@@ -7,7 +7,7 @@ extern crate num_bigint;
 use num_bigint::{Sign, BigInt};
 pub use ops::Add;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Bit {
     value: BigInt,
     length: usize,

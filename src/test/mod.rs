@@ -125,6 +125,15 @@ fn compare() {
 }
 
 #[test]
+fn shift() {
+    let a = Bit::new((15, 4));
+
+    assert_eq!(a.clone() << 2, Bit::new((12, 4)));
+    assert_eq!(a.clone() >> 2, Bit::new((3, 4)));
+
+}
+
+#[test]
 fn truncate_bit() {
     let a = Bit::new(10);
 

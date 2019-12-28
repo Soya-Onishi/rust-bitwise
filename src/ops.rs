@@ -1,4 +1,4 @@
-pub use std::ops::{Add, Sub, Mul, Div, Index};
+pub use std::ops::{Add, Sub, Mul, Div, Index, Shr, Shl};
 pub use std::cmp::{PartialEq, PartialOrd, Eq, Ordering};
 use std::cmp::max;
 use num_bigint::{Sign, BigInt};
@@ -17,6 +17,29 @@ impl Sub for Bit {
 
     fn sub(self, other: Bit) -> Bit {
         binops(self, other, |a, b| a.value - b.value)
+    }
+}
+
+impl Shl<usize> for Bit {
+    type Output = Bit;
+
+    fn shl(self, shamt: usize) -> Bit {
+        let length = self.length();
+        let mask = (BigInt::new(Sign::Plus, vec![1]) << length) - 1;
+        let value = (self.value() << shamt) & mask;
+
+        Bit { value, length }
+    }
+}
+
+impl Shr<usize> for Bit {
+    type Output = Bit;
+
+    fn shr(self, shamt: usize) -> Bit {
+        let value = self.value() >> shamt;
+        let length = self.length();
+
+        Bit{ value, length }
     }
 }
 
