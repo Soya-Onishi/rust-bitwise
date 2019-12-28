@@ -1,3 +1,6 @@
+mod ops;
+
+#[cfg(test)]
 mod test;
 
 extern crate num_bigint;
@@ -10,6 +13,14 @@ pub struct Bit {
 }
 
 impl Bit {
+    pub fn value(&self) -> &BigUint {
+        &self.value
+    }
+
+    pub fn length(&self) -> usize {
+        self.length
+    }
+
     pub fn truncate(&self, upper: usize, lower: usize) -> Bit {
         assert!(upper >= lower);
         assert!(upper < self.length);
@@ -41,23 +52,24 @@ impl Bit {
     }
 
     pub fn concat(&self, that: &Bit) -> Bit {
-        let value = (&self.value << &that.length) | &that.value;
+        let value = (&self.value << that.length) | &that.value;
 
-        Bit { value, length: &self.length + &that.length }
+        Bit { value, length: self.length + that.length }
     }
 }
 
 pub trait BitConstructor<T> {
     fn new(value: T) -> Bit;
-    fn new_with_length(value: T, length: usize) -> Bit;
 }
 
 impl BitConstructor<u32> for Bit {
     fn new(value: u32) -> Bit {
         Bit { value: BigUint::new(vec![value]), length: 32 }
     }
+}
 
-    fn new_with_length(value: u32, length: usize) -> Bit {
+impl BitConstructor<(u32, usize)> for Bit {
+    fn new((value, length): (u32, usize)) -> Bit {
         let mut at_least = 1;
         for shamt in 1..32 {
             if (value >> shamt) & 1 == 1 {
