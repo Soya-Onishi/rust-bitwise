@@ -64,6 +64,14 @@ fn add2() {
 }
 
 #[test]
+fn add_overflow() {
+    let a = Bit::new(std::u32::MAX);
+    let b = Bit::new(1);
+
+    assert_eq!(a + b, Bit::new(0));
+}
+
+#[test]
 fn add_with_zero() {
     let a = Bit::new(0);
     let b = Bit::new(1);
@@ -93,6 +101,21 @@ fn sub_from_zero() {
     let b = Bit::new(1);
 
     assert_eq!(a - b, Bit::new(std::u32::MAX))
+}
+
+#[test]
+fn compare() {
+    let a = Bit::new(0);
+    let b = Bit::new(1);
+    let c = Bit::new(2);
+    let d = Bit::new(1);
+
+    assert!(a < b);
+    assert_eq!(b, d);
+    assert_ne!(a, b);
+    assert!(a <= b);
+    assert!(b > a);
+    assert!(b >= a);
 }
 
 #[test]
