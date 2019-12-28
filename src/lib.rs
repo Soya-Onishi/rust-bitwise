@@ -30,6 +30,14 @@ impl Bit {
 
         result.clone()
     }
+
+    pub fn zero_ext(&self, length: usize) -> Bit {
+        assert!(self.length() <= length);
+
+        Bit { value: self.value().clone(), length }
+    }
+
+
 }
 
 pub trait BitConstructor<T> {
