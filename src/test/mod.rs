@@ -2,6 +2,12 @@ use super::{Bit, BitConstructor, Add, Truncate};
 use num_bigint::{Sign, BigInt};
 
 #[test]
+#[should_panic]
+fn constructor_cause_panic() {
+    Bit::new((15, 2));
+}
+
+#[test]
 fn create_instance_without_length() {
     let a = Bit::new(3);
     let value = a.value();
