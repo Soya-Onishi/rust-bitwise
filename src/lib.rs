@@ -37,7 +37,30 @@ impl Bit {
         Bit { value: self.value().clone(), length }
     }
 
+    pub fn sign_ext(&self, length: usize) -> Bit {
+        assert!(self.length() <= length);
 
+        let top_is_zero = || {
+            self.truncate(self.length() - 1).value() == 0
+        };
+
+        let is_no_length_diff = || {
+            (self.length() - length) == 0
+        };
+
+        let mask =
+            if top_is_zero() || is_no_length_diff() {
+                BigInt::new(Sign::NoSign, vec![0])
+            } else {
+                let diff = self.length() - length;
+                let allone = (BigInt::new(Sign::Plus, vec![1]) << diff) - 1;
+                allone << self.length()
+            };
+
+        let value = mask | self.value();
+
+        Bit { value, length }
+    }
 }
 
 pub trait BitConstructor<T> {
