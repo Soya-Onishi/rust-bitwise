@@ -113,7 +113,6 @@ fn sub_from_zero() {
 fn compare() {
     let a = Bit::new(0);
     let b = Bit::new(1);
-    let c = Bit::new(2);
     let d = Bit::new(1);
 
     assert!(a < b);
@@ -216,4 +215,22 @@ fn zero_extension_causes_panic() {
 #[should_panic]
 fn sign_extension_causes_panic() {
     Bit::new((10, 4)).sign_ext(2);
+}
+
+#[test]
+fn cast_into_u32() {
+    let byte = Bit::new((15, 8));
+    let short = Bit::new((15, 16));
+    let word = Bit::new((15, 32));
+
+    assert_eq!(byte.as_u32(), 15);
+    assert_eq!(short.as_u32(), 15);
+    assert_eq!(word.as_u32(), 15);
+}
+
+#[test]
+fn cast_into_u8() {
+    let byte = Bit::new((15, 8));
+
+    assert_eq!(byte.as_u8(), 15);
 }
