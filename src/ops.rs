@@ -1,4 +1,4 @@
-pub use std::ops::{Add, Sub, Mul, Div, Index, Shr, Shl};
+pub use std::ops::{Add, Sub, Mul, Div, Index, Shr, Shl, BitAnd, BitOr, BitXor, Not};
 pub use std::cmp::{PartialEq, PartialOrd, Eq, Ordering};
 use std::cmp::max;
 use num_bigint::{Sign, BigInt};
@@ -16,8 +16,32 @@ impl Sub for Bit {
     type Output = Bit;
 
     fn sub(self, other: Bit) -> Bit {
-        binops(self, other, |a, b| a.value - b.value)
+        binops(self, other, |a, b| a.value() - b.value())
     }
+}
+
+impl BitAnd for Bit {
+    type Output = Bit;
+
+    fn bitand(self, other: Bit) -> Bit { binops(self, other, |a, b| a.value() & b.value()) }
+}
+
+impl BitOr for Bit {
+    type Output = Bit;
+
+    fn bitor(self, other: Bit) -> Bit { binops(self, other, |a, b| a.value() | b.value()) }
+}
+
+impl BitXor for Bit {
+    type Output = Bit;
+
+    fn bitxor(self, other: Bit) -> Bit { binops(self, other, |a, b| a.value() ^ b.value())}
+}
+
+impl Not for Bit {
+    type Output = Bit;
+
+    fn not(self) -> Bit { Bit { value: !self.value().clone(), length: self.length() } }
 }
 
 impl Shl<usize> for Bit {
