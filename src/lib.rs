@@ -69,6 +69,25 @@ impl Bit {
 
         Bit { value, length }
     }
+
+    pub fn as_u32(&self) -> u32 {
+        assert!(self.length() <= 32);
+
+        let value = self.value();
+        let (_, bytes) = value.to_bytes_le();
+
+        bytes.iter().zip(0..4).fold(0, |acc, (&byte, index)| {
+            acc + (byte << index * 8) as u32
+        })
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        assert!(self.length() <= 32);
+
+        let (_, value) = self.value().to_bytes_be();
+
+        value[0]
+    }
 }
 
 pub trait BitConstructor<T> {
