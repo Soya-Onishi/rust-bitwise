@@ -29,7 +29,7 @@ fn create_instance_with_length() {
 fn concatenate0() {
     let a = Bit::new((3, 2));
     let b = Bit::new((3, 2));
-    let bit = a.concat(&b);
+    let bit = Bit::concat(vec![&a, &b]);
 
     assert_eq!(bit.value().clone(), BigInt::new(Sign::Plus, vec![15]));
     assert_eq!(bit.length(), 4);
@@ -39,7 +39,7 @@ fn concatenate0() {
 fn concatenate1() {
     let a = Bit::new(3);
     let b = Bit::new(4);
-    let bit = a.concat(&b);
+    let bit = Bit::concat(vec![&a, &b]);
 
     assert_eq!(bit.value().clone(), BigInt::new(Sign::Plus, vec![4, 3]));
     assert_eq!(bit.length(), 64);
@@ -178,4 +178,42 @@ fn truncate_invalid_range2() {
 fn truncate_invalid_index() {
     let a = Bit::new((10, 4));
     a.truncate(4);
+}
+
+#[test]
+fn zero_extension() {
+    let a = Bit::new((10, 4)).zero_ext(8);
+    let a_high = a.truncate((7, 4));
+    let a_low = a.truncate((3, 0));
+
+    assert_eq!(a_high, Bit::new(0));
+    assert_eq!(a_low, Bit::new(10));
+}
+
+#[test]
+fn sign_extension() {
+    let a = Bit::new((10, 4)).sign_ext(8);
+    let a_high = a.truncate((7, 4));
+    let a_low = a.truncate((3, 0));
+
+    assert_eq!(a_high, Bit::new(15));
+    assert_eq!(a_low, Bit::new(10));
+}
+
+#[test]
+fn extension_same_length() {
+    Bit::new((10, 4)).zero_ext(4);
+    Bit::new((10, 4)).sign_ext(4);
+}
+
+#[test]
+#[should_panic]
+fn zero_extension_causes_panic() {
+    Bit::new((10, 4)).zero_ext(2);
+}
+
+#[test]
+#[should_panic]
+fn sign_extension_causes_panic() {
+    Bit::new((10, 4)).sign_ext(2);
 }

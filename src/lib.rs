@@ -24,11 +24,15 @@ impl Bit {
     pub fn concat(bits: Vec<&Bit>) -> Bit {
         assert!(bits.len() >= 2);
 
-        let result = bits[1..].iter().fold(bits[0], |acc, &bit| {
+        let value = bits[1..].iter().fold(bits[0].value().clone(), |acc, &bit| {
             (acc << bit.length()) | bit.value()
         });
 
-        result.clone()
+        let length = bits.iter().fold(0, |acc, &bit| {
+           acc + bit.length()
+        });
+
+        Bit { value, length }
     }
 
     pub fn zero_ext(&self, length: usize) -> Bit {
@@ -41,18 +45,22 @@ impl Bit {
         assert!(self.length() <= length);
 
         let top_is_zero = || {
-            self.truncate(self.length() - 1).value() == 0
+            let zero = BigInt::new(Sign::NoSign, vec![0]);
+            let truncated = self.truncate(self.length() - 1);
+            let value = truncated.value();
+
+            value == &zero
         };
 
         let is_no_length_diff = || {
-            (self.length() - length) == 0
+            (length - self.length()) == 0
         };
 
         let mask =
             if top_is_zero() || is_no_length_diff() {
                 BigInt::new(Sign::NoSign, vec![0])
             } else {
-                let diff = self.length() - length;
+                let diff = length - self.length();
                 let allone = (BigInt::new(Sign::Plus, vec![1]) << diff) - 1;
                 allone << self.length()
             };
