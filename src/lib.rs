@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod test;
 pub mod ops;
+pub mod errors;
 
 extern crate num_bigint;
 
