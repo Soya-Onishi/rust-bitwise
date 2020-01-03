@@ -6,6 +6,7 @@ pub mod errors;
 extern crate num_bigint;
 
 use num_bigint::{Sign, BigInt};
+use errors::Error;
 
 #[derive(Debug, Clone)]
 pub struct Bit {
@@ -22,72 +23,80 @@ impl Bit {
         self.length
     }
 
-    pub fn concat(bits: Vec<&Bit>) -> Bit {
+    pub fn concat(bits: Vec<&Bit>) -> Result<Bit, Error> {
         assert!(bits.len() >= 2);
 
-        let value = bits[1..].iter().fold(bits[0].value().clone(), |acc, &bit| {
-            (acc << bit.length()) | bit.value()
-        });
+        if bits.len() < 2 { Err(Error::NotEnoughLengthToConcat(bits.len())) }
+        else {
+            let value = bits[1..].iter().fold(bits[0].value().clone(), |acc, &bit| {
+                (acc << bit.length()) | bit.value()
+            });
 
-        let length = bits.iter().fold(0, |acc, &bit| {
-           acc + bit.length()
-        });
+            let length = bits.iter().fold(0, |acc, &bit| {
+                acc + bit.length()
+            });
 
-        Bit { value, length }
+            Ok(Bit { value, length })
+        }
     }
 
-    pub fn zero_ext(&self, length: usize) -> Bit {
+    pub fn zero_ext(&self, length: usize) -> Result<Bit, Error> {
         assert!(self.length() <= length);
 
-        Bit { value: self.value().clone(), length }
+        if (self.length() > length) { Err(Error::NotEnoughLengthToExt(self.length(), length)) }
+        else { Ok(Bit { value: self.value().clone(), length }) }
     }
 
-    pub fn sign_ext(&self, length: usize) -> Bit {
-        assert!(self.length() <= length);
+    pub fn sign_ext(&self, length: usize) -> Result<Bit, Error> {
+        if self.length() > length { Err(Error::NotEnoughLengthToExt(self.length(), length)) }
+        else {
+            let top_is_zero = || {
+                let zero = BigInt::new(Sign::NoSign, vec![0]);
+                let truncated = self.truncate(self.length() - 1);
+                let value = truncated.value();
 
-        let top_is_zero = || {
-            let zero = BigInt::new(Sign::NoSign, vec![0]);
-            let truncated = self.truncate(self.length() - 1);
-            let value = truncated.value();
-
-            value == &zero
-        };
-
-        let is_no_length_diff = || {
-            (length - self.length()) == 0
-        };
-
-        let mask =
-            if top_is_zero() || is_no_length_diff() {
-                BigInt::new(Sign::NoSign, vec![0])
-            } else {
-                let diff = length - self.length();
-                let allone = (BigInt::new(Sign::Plus, vec![1]) << diff) - 1;
-                allone << self.length()
+                value == &zero
             };
 
-        let value = mask | self.value();
+            let is_no_length_diff = || {
+                (length - self.length()) == 0
+            };
 
-        Bit { value, length }
+            let mask =
+                if top_is_zero() || is_no_length_diff() {
+                    BigInt::new(Sign::NoSign, vec![0])
+                } else {
+                    let diff = length - self.length();
+                    let allone = (BigInt::new(Sign::Plus, vec![1]) << diff) - 1;
+                    allone << self.length()
+                };
+
+            let value = mask | self.value();
+
+            Ok(Bit { value, length })
+        }
     }
 
-    pub fn as_u32(&self) -> u32 {
-        assert!(self.length() <= 32);
+    pub fn as_u32(&self) -> Result<u32, Error> {
+        if self.length() > 32 { Err(Error::TooLongToCast(32, self.length())) }
+        else {
+            let value = self.value();
+            let (_, bytes) = value.to_bytes_le();
 
-        let value = self.value();
-        let (_, bytes) = value.to_bytes_le();
+            let value = bytes.iter().zip(0..4).fold(0, |acc, (&byte, index)| {
+                acc + (byte << index * 8) as u32
+            });
 
-        bytes.iter().zip(0..4).fold(0, |acc, (&byte, index)| {
-            acc + (byte << index * 8) as u32
-        })
+            Ok(value)
+        }
     }
 
-    pub fn as_u8(&self) -> u8 {
-        assert!(self.length() <= 32);
-
-        let (_, value) = self.value().to_bytes_be();
-
-        value[0]
+    pub fn as_u8(&self) -> Result<u8, Error> {
+        if self.length() > 8 { Err(Error::TooLongToCast(8, self.length())) }
+        else {
+            let (_, value) = self.value().to_bytes_be();
+            Ok(value[0])
+        }
     }
 }
 
@@ -105,7 +114,7 @@ impl BitConstructor<u32> for Bit {
 }
 
 impl BitConstructor<(u32, usize)> for Bit {
-    fn new((value, length): (u32, usize)) -> Bit {
+    fn new((value, length): (u32, usize)) -> Result<Bit, Error> {
         let mut at_least = 1;
         for shamt in 1..32 {
             if (value >> shamt) & 1 == 1 {
@@ -113,26 +122,30 @@ impl BitConstructor<(u32, usize)> for Bit {
             }
         }
 
-        assert!(length >= at_least as usize);
-
-        let value = BigInt::new(Sign::Plus, vec![value]);
-        Bit { value, length }
+        let at_least = at_least as usize;
+        if length < at_least { Err(Error::TooShortToConstruct(at_least, length)) }
+        else {
+            let value = BigInt::new(Sign::Plus, vec![value]);
+            Ok(Bit { value, length })
+        }
     }
 }
 
 impl BitConstructor<BigInt> for Bit {
-    fn new(value: BigInt) -> Bit {
-        assert_eq!(value.sign(), Sign::Plus);
-        let (_, bytes) = value.to_bytes_be();
-        let length = bytes.len() * 8;
-
-        Bit{ value, length }
+    fn new(value: BigInt) -> Result<Bit, Error> {
+        if value.sign() != Sign::Plus { Err(Error::SignNotPlus(value.sign())) }
+        else {
+            let (_, bytes) = value.to_bytes_be();
+            let length = bytes.len() * 8;
+            Ok(Bit{ value, length })
+        }
     }
 }
 
 impl BitConstructor<(BigInt, usize)> for Bit {
-    fn new((value, length): (BigInt, usize)) -> Bit {
-        assert_eq!(value.sign(), Sign::Plus);
+    fn new((value, length): (BigInt, usize)) -> Result<Bit, Error> {
+        if value.sing() != Sign::Plus { return Err(Error::SignNotPlus(value.sign())) }
+
 
         let (_, bytes) = value.to_bytes_be();
         let top = &bytes[0];
@@ -145,9 +158,9 @@ impl BitConstructor<(BigInt, usize)> for Bit {
         }
 
         let at_least_length = (bytes.len() - 1) * 8 + at_least;
-        assert!(at_least_length <= length);
 
-        return Bit { value, length }
+        if at_least_length > length { Err(Error::TooShortToConstruct(at_least_length, length)) }
+        else { Ok(Bit { value, length }) }
     }
 }
 
@@ -156,25 +169,25 @@ pub trait Truncate<T> {
 }
 
 impl Truncate<usize> for Bit {
-    fn truncate(&self, index: usize) -> Bit {
-        assert!(index < self.length);
+    fn truncate(&self, index: usize) -> Result<Bit, Error> {
+        if index >= self.length { return Err(Error::OverBitLength(self.length, index)) }
 
         let mask = &BigInt::new(Sign::Plus, vec![1]);
         let value = (self.value() >> index) & mask;
 
-        Bit { value, length: 1 }
+        Ok(Bit { value, length: 1 })
     }
 }
 
 impl Truncate<(usize, usize)> for Bit {
-    fn truncate(&self, (upper, lower): (usize, usize)) -> Bit {
-        assert!(upper >= lower);
-        assert!(upper < self.length());
+    fn truncate(&self, (upper, lower): (usize, usize)) -> Result<Bit, Error> {
+        if upper < lower { return Err(Error::UpperLowerThanLower(upper, lower)) }
+        if upper >= self.length { return Err(Error::OverBitLength(self.length, index)) }
 
         let length = upper - lower + 1;
         let mask = (BigInt::new(Sign::Plus, vec![1]) << length) - 1;
         let value = (self.value() >> lower) & mask;
 
-        Bit { value, length }
+        Ok(Bit { value, length })
     }
 }
