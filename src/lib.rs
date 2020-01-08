@@ -104,20 +104,19 @@ impl Bit {
 }
 
 pub trait BitConstructor<T>: Sized {
-    fn new(value: T) -> Result<Self, Error>;
+    fn new(value: T) -> Self;
+    fn new_with_length(value: T, length: usize) -> Result<Self, Error>;
 }
 
 impl BitConstructor<u32> for Bit {
-    fn new(value: u32) -> Result<Bit, Error> {
+    fn new(value: u32) -> Bit {
         let value = BigInt::new(Sign::Plus, vec![value]);
         let length = 32;
 
-        Ok(Bit { value, length })
+        Bit { value, length }
     }
-}
 
-impl BitConstructor<(u32, usize)> for Bit {
-    fn new((value, length): (u32, usize)) -> Result<Bit, Error> {
+    fn new_with_length(value: u32, length: usize) -> Result<Bit, Error> {
         let mut at_least = 1;
         for shamt in 1..32 {
             if (value >> shamt) & 1 == 1 {
@@ -135,20 +134,17 @@ impl BitConstructor<(u32, usize)> for Bit {
 }
 
 impl BitConstructor<BigInt> for Bit {
-    fn new(value: BigInt) -> Result<Bit, Error> {
-        if value.sign() != Sign::Plus { Err(Error::SignNotPlus(value.sign())) }
-        else {
-            let (_, bytes) = value.to_bytes_be();
-            let length = bytes.len() * 8;
-            Ok(Bit{ value, length })
-        }
+    fn new(value: BigInt) -> Bit {
+        let value= minus_into_plus(value);
+
+        let (_, bytes) = value.to_bytes_be();
+        let length = bytes.len() * 8;
+        Bit{ value, length }
+
     }
-}
 
-impl BitConstructor<(BigInt, usize)> for Bit {
-    fn new((value, length): (BigInt, usize)) -> Result<Bit, Error> {
-        if value.sign() != Sign::Plus { return Err(Error::SignNotPlus(value.sign())) }
-
+    fn new_with_length(value: BigInt, length: usize) -> Result<Bit, Error> {
+        let value = minus_into_plus(value);
 
         let (_, bytes) = value.to_bytes_be();
         let top = &bytes[0];
@@ -164,6 +160,13 @@ impl BitConstructor<(BigInt, usize)> for Bit {
 
         if at_least_length > length { Err(Error::TooShortToConstruct(at_least_length, length)) }
         else { Ok(Bit { value, length }) }
+    }
+}
+
+fn minus_into_plus(value: BigInt) -> BigInt {
+    match value.sign() {
+        Sign::Plus | Sign::NoSign => value,
+        Sign::Minus => !value + 1,
     }
 }
 
