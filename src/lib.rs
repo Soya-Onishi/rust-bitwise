@@ -53,9 +53,12 @@ impl Bit {
             let top_is_zero = || {
                 let zero = BigInt::new(Sign::NoSign, vec![0]);
                 let truncated = self.truncate(self.length() - 1);
-                let value = truncated.value();
+                let value = match truncated {
+                    Ok(bit) => bit.value().clone(),
+                    Err(err) => panic!("implementation error occured"),
+                };
 
-                value == &zero
+                &value == &zero
             };
 
             let is_no_length_diff = || {
@@ -100,16 +103,16 @@ impl Bit {
     }
 }
 
-pub trait BitConstructor<T> {
-    fn new(value: T) -> Bit;
+pub trait BitConstructor<T>: Sized {
+    fn new(value: T) -> Result<Self, Error>;
 }
 
 impl BitConstructor<u32> for Bit {
-    fn new(value: u32) -> Bit {
+    fn new(value: u32) -> Result<Bit, Error> {
         let value = BigInt::new(Sign::Plus, vec![value]);
         let length = 32;
 
-        Bit { value, length }
+        Ok(Bit { value, length })
     }
 }
 
@@ -144,7 +147,7 @@ impl BitConstructor<BigInt> for Bit {
 
 impl BitConstructor<(BigInt, usize)> for Bit {
     fn new((value, length): (BigInt, usize)) -> Result<Bit, Error> {
-        if value.sing() != Sign::Plus { return Err(Error::SignNotPlus(value.sign())) }
+        if value.sign() != Sign::Plus { return Err(Error::SignNotPlus(value.sign())) }
 
 
         let (_, bytes) = value.to_bytes_be();
@@ -164,8 +167,8 @@ impl BitConstructor<(BigInt, usize)> for Bit {
     }
 }
 
-pub trait Truncate<T> {
-    fn truncate(&self, range: T) -> Self;
+pub trait Truncate<T>: Sized {
+    fn truncate(&self, range: T) -> Result<Self, Error>;
 }
 
 impl Truncate<usize> for Bit {
@@ -182,7 +185,7 @@ impl Truncate<usize> for Bit {
 impl Truncate<(usize, usize)> for Bit {
     fn truncate(&self, (upper, lower): (usize, usize)) -> Result<Bit, Error> {
         if upper < lower { return Err(Error::UpperLowerThanLower(upper, lower)) }
-        if upper >= self.length { return Err(Error::OverBitLength(self.length, index)) }
+        if upper >= self.length { return Err(Error::OverBitLength(self.length, upper)) }
 
         let length = upper - lower + 1;
         let mask = (BigInt::new(Sign::Plus, vec![1]) << length) - 1;
