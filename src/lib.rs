@@ -87,7 +87,7 @@ impl Bit {
             let (_, bytes) = value.to_bytes_le();
 
             let value = bytes.iter().zip(0..4).fold(0, |acc, (&byte, index)| {
-                acc + (byte << index * 8) as u32
+                acc + ((byte as u32) << (index * 8))
             });
 
             Ok(value)
