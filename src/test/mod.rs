@@ -1,5 +1,10 @@
+extern crate rand;
+
 use super::{Bit, BitConstructor, Truncate};
 use num_bigint::{Sign, BigInt};
+
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 #[test]
 #[should_panic]
@@ -219,13 +224,31 @@ fn sign_extension_causes_panic() {
 
 #[test]
 fn cast_into_u32() {
-    let byte = Bit::new_with_length(15, 8).unwrap();
-    let short = Bit::new_with_length(15, 16).unwrap();
-    let word = Bit::new_with_length(15, 32).unwrap();
+    let mut rng: StdRng = SeedableRng::seed_from_u64(0);
 
-    assert_eq!(byte.as_u32().unwrap(), 15);
-    assert_eq!(short.as_u32().unwrap(), 15);
-    assert_eq!(word.as_u32().unwrap(), 15);
+    let byte_test = |rng: &mut StdRng| {
+        let value: u8 = rng.gen_range(0, std::u8::MAX);
+        let byte = Bit::new_with_length(value as u32, 8).unwrap();
+        assert_eq!(byte.as_u32().unwrap(), value as u32);
+    };
+
+    let short_test = |rng: &mut StdRng| {
+        let value: u16 = rng.gen_range(0, std::u16::MAX);
+        let short = Bit::new_with_length(value as u32, 16).unwrap();
+        assert_eq!(short.as_u32().unwrap(), value as u32);
+    };
+
+    let word_test = |rng: &mut StdRng| {
+        let value: u32 = rng.gen_range(0, std::u32::MAX);
+        let word = Bit::new_with_length(value as u32, 32).unwrap();
+        assert_eq!(word.as_u32().unwrap(), value as u32);
+    };
+
+    for _ in 0..1000 {
+        byte_test(&mut rng);
+        short_test(&mut rng);
+        word_test(&mut rng);
+    }
 }
 
 #[test]
