@@ -80,26 +80,30 @@ impl Bit {
         }
     }
 
-    pub fn as_u32(&self) -> Result<u32, Error> {
+    pub fn as_u32_safe(&self) -> Result<u32, Error> {
         if self.length() > 32 { Err(Error::TooLongToCast(32, self.length())) }
-        else {
-            let value = self.value();
-            let (_, bytes) = value.to_bytes_le();
-
-            let value = bytes.iter().zip(0..4).fold(0, |acc, (&byte, index)| {
-                acc + ((byte as u32) << (index * 8))
-            });
-
-            Ok(value)
-        }
+        else { Ok(self.as_u32()) }
     }
 
-    pub fn as_u8(&self) -> Result<u8, Error> {
+    pub fn as_u32(&self) -> u32 {
+        let value = self.value();
+        let (_, bytes) = value.to_bytes_le();
+
+        let value = bytes.iter().zip(0..4).fold(0, |acc, (&byte, index)| {
+            acc + ((byte as u32) << (index * 8))
+        });
+
+        value
+    }
+
+    pub fn as_u8_safe(&self) -> Result<u8, Error> {
         if self.length() > 8 { Err(Error::TooLongToCast(8, self.length())) }
-        else {
-            let (_, value) = self.value().to_bytes_be();
-            Ok(value[0])
-        }
+        else { Ok(self.as_u8()) }
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        let (_, value) = self.value().to_bytes_be();
+        value[0]
     }
 }
 
